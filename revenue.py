@@ -4,7 +4,7 @@ import constants
 
 def h2_export(h2_export_without_tank, h2_charge_with_tank, h2_tank_capacity):
     h2_sold = np.array([])
-    h2_diff = h2_export_without_tank - h2_tank_capacity
+    h2_diff = h2_export_without_tank - h2_charge_with_tank
     for n in range(2, len(h2_charge_with_tank) - 2):
         if h2_diff[n] - h2_diff[n - 1] > 0:
             h2_sold = np.append(h2_sold, h2_diff[n] - h2_diff[n - 1])
@@ -33,3 +33,4 @@ def elec_export(elec_price, supply, bat_charge, h2_charge):
 
         elec_revenue += elec_sold[n] * elec_price[n]
     return elec_revenue, elec_sold
+

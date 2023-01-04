@@ -14,13 +14,17 @@ def stabilization_plot_analyis(power, h2_capacity, delta_list, batto, fuel_cell)
             delta_after = np.array([0])
             delta_res = np.array([0])
 
-            delta_after, bat_charge, h2_charge = application_rules.application_seq(delta_list, delta_after, delta_res,
-                                                                                   bat_charge,
-                                                                                   h2_charge, power[i],
-                                                                                   h2_capacity[j],
-                                                                                   batto.eff_bat,
-                                                                                   batto.eff_electrolysis,
-                                                                                   fuel_cell.eff, power[i])
+            delta_after, bat_charge, h2_charge, act_fuel_cell = application_rules.application_seq(delta_list,
+                                                                                                  delta_after,
+                                                                                                  delta_res,
+                                                                                                  bat_charge,
+                                                                                                  h2_charge, power[i],
+                                                                                                  h2_capacity[j],
+                                                                                                  batto.eff_bat,
+                                                                                                  batto.eff_electrolysis,
+                                                                                                  fuel_cell.eff,
+                                                                                                  power[i],
+                                                                                                  fuel_cell.power)
 
             stabilization = (np.average(abs(delta_after[3:-1])) - np.average(abs(delta_list[2:-2]))) / np.average(
                 abs(delta_list[2:-2])) * 100

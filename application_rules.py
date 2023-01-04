@@ -96,7 +96,7 @@ def deploy_h2(delta_res: np.ndarray, delta_after: np.ndarray, h2_charge: np.ndar
 
     if h2_charge[-1] + delta / eff_fuel_cell > 0:  # enough hydrogen to only use hydrogen ; delta is negative
         # delta_h2 = delta # this is the output energy to the fuelcell
-        delta_after[-1] = 0
+        delta_after[-1] = delta-delta_h2
         charge_diff = delta_h2 / eff_fuel_cell
         h2_charge = np.append(h2_charge, h2_charge[-1] + charge_diff)  # + charge_diff since delta is negative
         delta_res[-1] = 0
@@ -125,7 +125,8 @@ def idle(delta_after: np.ndarray, delta_res: np.ndarray, h2_charge: np.ndarray, 
 def application_seq(delta_list: np.ndarray, delta_after: np.ndarray, delta_res: np.ndarray, bat_charge: np.ndarray,
                     h2_charge: np.ndarray,
                     bat_capacity: float, h2_capacity: float, eff_bat: float, eff_electrolysis: float,
-                    eff_fuel_cell: float, max_power: float):
+                    eff_fuel_cell: float, max_power: float, max_power_fuel_cell: float):
+    act_fuel_cell = 0
     for i in range(0, len(delta_list)-1):
         # print("i: " + str(i))
         delta = delta_list[i]
@@ -140,12 +141,23 @@ def application_seq(delta_list: np.ndarray, delta_after: np.ndarray, delta_res: 
                                                             bat_capacity, eff_bat)
             h2_charge, delta_after, delta_res = charge_h2(delta_res, delta_after, h2_charge, max_power, h2_capacity,
                                                           eff_electrolysis)
+
+            if h2_charge[i]-h2_charge[i-1] <= 0:
+                act_fuel_cell += abs(h2_charge[i]-h2_charge[i-1])
+            else:
+                act_fuel_cell = act_fuel_cell
+
         elif delta < 0:
             # print("option 2")
             # print("")
             # Deploy battery
             bat_charge, delta_after, delta_res = deploy_bat(delta, delta_after, delta_res, bat_charge, max_power)
-            h2_charge, delta_after, delta_res = deploy_h2(delta_res, delta_after, h2_charge, eff_fuel_cell, max_power)
+            h2_charge, delta_after, delta_res = deploy_h2(delta_res, delta_after, h2_charge, eff_fuel_cell, max_power_fuel_cell)
+
+            if h2_charge[i]-h2_charge[i-1] <= 0:
+                act_fuel_cell += abs(h2_charge[i]-h2_charge[i-1])
+            else:
+                act_fuel_cell = act_fuel_cell
 
         elif delta == 0:
             # print("option 3")
@@ -153,7 +165,18 @@ def application_seq(delta_list: np.ndarray, delta_after: np.ndarray, delta_res: 
             # Idle
             h2_charge, bat_charge, delta_after, delta_res = idle(delta_after, delta_res, h2_charge, bat_charge)
 
-    return delta_after, bat_charge, h2_charge
+            if h2_charge[i]-h2_charge[i-1] <= 0:
+                act_fuel_cell += abs(h2_charge[i]-h2_charge[i-1])
+            else:
+                act_fuel_cell = act_fuel_cell
+
+    for n in range(len(delta_after)):
+        if h2_charge[n] >= h2_capacity:
+            delta_after[n] = 0
+        else:
+            delta_after[n] = delta_after[n]
+
+    return delta_after, bat_charge, h2_charge, act_fuel_cell
 
 
 # delta_list = np.array([0, 100, 200, 300, 200, 100, -200, -500])
